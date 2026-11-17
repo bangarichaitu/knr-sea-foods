@@ -24,7 +24,8 @@ import {
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
+import ToggleOffIcon from "@mui/icons-material/ToggleOff";
 
 import categoryService from "../../services/categoryService";
 
@@ -44,7 +45,7 @@ export const CategoryList = () => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [categoryToUpdate, setCategoryToUpdate] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -112,25 +113,40 @@ export const CategoryList = () => {
     }
   };
 
-  const handleDelete = async (categoryId) => {
+  const handleUpdate = async (categoryId) => {
     setDialogOpen(true);
-    setCategoryToDelete(categoryId);
+    setCategoryToUpdate(categoryId);
   };
 
-  const confirmDelete = async () => {
+  const confirmUpdate = async () => {
     try {
-      await categoryService.delete(token, categoryToDelete);
-      showToast("Category deleted successfully", "success");
+      await categoryService.toggleStatus(token, categoryToUpdate.id);
+      showToast("Category status updated successfully", "success");
       await loadCategories();
     } catch (err) {
       const errors = err.response?.data?.errors;
       Array.isArray(errors) && showToast(errors.join(", "), "error");
       !Array.isArray(errors) &&
-        showToast(["Unable to delete category."].join(", "), "error");
+        showToast(["Unable to update Category status."].join(", "), "error");
     } finally {
       setDialogOpen(false);
     }
   };
+
+  // const confirmDelete = async () => {
+  //   try {
+  //     await categoryService.delete(token, categoryToDelete);
+  //     showToast("Category deleted successfully", "success");
+  //     await loadCategories();
+  //   } catch (err) {
+  //     const errors = err.response?.data?.errors;
+  //     Array.isArray(errors) && showToast(errors.join(", "), "error");
+  //     !Array.isArray(errors) &&
+  //       showToast(["Unable to delete category."].join(", "), "error");
+  //   } finally {
+  //     setDialogOpen(false);
+  //   }
+  // };
 
   return (
     <Box>
@@ -175,9 +191,13 @@ export const CategoryList = () => {
 
                   <IconButton
                     color="error"
-                    onClick={() => handleDelete(category.id)}
+                    onClick={() => handleUpdate(category)}
                   >
-                    <DeleteIcon />
+                    {category.active ? (
+                      <ToggleOnIcon color="success" />
+                    ) : (
+                      <ToggleOffIcon color="failure" />
+                    )}
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -236,9 +256,14 @@ export const CategoryList = () => {
       <ConfirmDialog
         open={dialogOpen}
         onCancel={() => setDialogOpen(false)}
-        onConfirm={confirmDelete}
-        title="Delete Category"
-        message="Are you sure you want to delete this category? This action cannot be undone."
+        onConfirm={confirmUpdate}
+        title={
+          (categoryToUpdate && categoryToUpdate?.active
+            ? "Deactivate"
+            : "Activate") + " Category"
+        }
+        message={`Are you sure you want to ${categoryToUpdate && categoryToUpdate?.active ? "deactivate" : "activate"} this category?`}
+        buttonMessage="Update Status"
       />
     </Box>
   );

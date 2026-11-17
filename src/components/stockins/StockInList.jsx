@@ -373,11 +373,13 @@ export const StockInList = () => {
                   value={form.category_id}
                   onChange={handleChange}
                 >
-                  {categories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
+                  {categories
+                    .filter((category) => category.active)
+                    .map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))}
                 </TextField>
               </Grid>
 

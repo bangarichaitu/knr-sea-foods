@@ -1,16 +1,31 @@
 import { Link } from "react-router";
 import { getInitials } from "../../helpers/getInitials";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export const Header = ({ user, logout }) => {
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="flex justify-between items-center bg-white shadow px-6 py-3">
       <h1 className="text-lg font-semibold">KNR SEA FOODS</h1>
 
       {/* Profile dropdown */}
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setOpen(!open)}
           className="cursor-pointer w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold"
@@ -26,6 +41,7 @@ export const Header = ({ user, logout }) => {
           >
             <Link
               to="/dashboard/profile"
+              onClick={() => setOpen(false)}
               className="block px-4 py-2 hover:bg-gray-100"
             >
               My Profile
@@ -33,7 +49,10 @@ export const Header = ({ user, logout }) => {
 
             {/* Logout */}
             <button
-              onClick={logout}
+              onClick={() => {
+                setOpen(false);
+                logout();
+              }}
               className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 cursor-pointer"
             >
               Logout

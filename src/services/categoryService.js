@@ -21,8 +21,12 @@ const categoryService = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  delete: (token, id) =>
-    api.delete(`/categories/${id}`, {
+  // delete: (token, id) =>
+  //   api.delete(`/categories/${id}`, {
+  //     headers: { Authorization: `Bearer ${token}` },
+  //   }),
+  toggleStatus: (token, id) =>
+    api.patch(`/categories/${id}/toggle_status`, null, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 };

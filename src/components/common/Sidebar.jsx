@@ -1,9 +1,10 @@
 import { NavLink } from "react-router";
+import seafoodImage from "../../assets/seafood.jpg";
 
 export const Sidebar = () => {
   return (
     <aside className="w-60 bg-gray-900 text-white min-h-screen p-4">
-      <img src="/src/assets/seafood.jpg" alt="KNR SEA FOODS" />
+      <img src={seafoodImage} alt="KNR SEA FOODS" />
 
       {/* Divider */}
       <div className="border-b border-gray-700 mb-4"></div>
