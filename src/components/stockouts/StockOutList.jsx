@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Add } from "@mui/icons-material";
+// Importing printBill should be at the top of the file, not inside the component
+import { printBill } from "../../BillPDF";
 
 import {
   Alert,
@@ -22,7 +24,6 @@ import {
   Stack,
 } from "@mui/material";
 
-import api from "../../Api";
 import stockOutTransactionService from "../../services/stockOutTransactionService";
 
 const initialForm = {
@@ -46,11 +47,23 @@ export const StockOutList = () => {
   const [error, setError] = useState([]);
   const [success, setSuccess] = useState("");
   const [open, setOpen] = useState(false);
+  const [printData, setPrintData] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const initialFilters = {
+    company_id: "",
+    category_id: "",
+    hotel_id: "",
+    transaction_date: "",
+  };
+
+  const [filters, setFilters] = useState(initialFilters);
 
   useEffect(() => {
     // loadDropdowns();
-    loadTransactions();
+    setFilters(initialFilters);
+    setPrintData(false);
+    loadTransactions({});
   }, []);
 
   // const loadDropdowns = async () => {
@@ -71,6 +84,70 @@ export const StockOutList = () => {
   //     console.error("Failed to load dropdowns", error);
   //   }
   // };
+
+  const handleShareWhatsApp = async () => {
+    const hotelName = hotels.find((h) => h.id === filters.hotel_id)?.name || "";
+    const bill = {
+      watsapp: true,
+      billNumber: filters.hotel_id ? `KNR-INV-${hotelName}-${Date.now()}` : "",
+      date: new Date().toLocaleDateString("en-IN"),
+      customerName: hotelName,
+      phone: hotels.find((h) => h.id === filters.hotel_id)?.phone || "",
+      items: transactions.map((t) => ({
+        name: t.category_name,
+        quantity: t.quantity,
+        price: t.rate,
+      })),
+      total: transactions.reduce((sum, t) => sum + t.quantity * t.rate, 0),
+    };
+
+    const pdfBlob = printBill(bill);
+
+    const file = new File([pdfBlob], `${bill.billNumber}.pdf`, {
+      type: "application/pdf",
+    });
+
+    console.log(
+      navigator.canShare?.({ files: [file] }),
+      "PDF Blob created for WhatsApp sharing",
+    );
+    console.log(pdfBlob, "pdfBlob");
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: "KNR SEA FOODS Bill",
+          text: "Your bill " + bill.billNumber,
+        });
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+        }
+      }
+    } else {
+      alert(
+        "Direct PDF sharing is not supported. Please download the bill and share it through WhatsApp.",
+      );
+    }
+  };
+
+  const handlePrintBill = () => {
+    const hotelName = hotels.find((h) => h.id === filters.hotel_id)?.name || "";
+    const bill = {
+      billNumber: filters.hotel_id ? `KNR-INV-${hotelName}-${Date.now()}` : "",
+      date: new Date().toLocaleDateString("en-IN"),
+      customerName: hotelName,
+      phone: hotels.find((h) => h.id === filters.hotel_id)?.phone || "",
+      items: transactions.map((t) => ({
+        name: t.category_name,
+        quantity: t.quantity,
+        price: t.rate,
+      })),
+      total: transactions.reduce((sum, t) => sum + t.quantity * t.rate, 0),
+    };
+
+    printBill(bill);
+  };
 
   const loadTransactions = async (filters = {}) => {
     try {
@@ -105,15 +182,6 @@ export const StockOutList = () => {
     }));
   };
 
-  const initialFilters = {
-    company_id: "",
-    category_id: "",
-    hotel_id: "",
-    transaction_date: "",
-  };
-
-  const [filters, setFilters] = useState(initialFilters);
-
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
 
@@ -124,12 +192,14 @@ export const StockOutList = () => {
   };
 
   const handleApplyFilters = () => {
+    setPrintData(filters.hotel_id && filters.transaction_date);
     loadTransactions(filters);
   };
 
   const handleResetFilters = () => {
     setFilters(initialFilters);
     loadTransactions({});
+    setPrintData(false);
   };
 
   const handleSubmit = async (event) => {
@@ -175,8 +245,10 @@ export const StockOutList = () => {
       setSuccess("Stock transaction saved successfully");
       setForm(initialForm);
       handleClose();
+      setFilters(initialFilters);
+      setPrintData(false);
 
-      await loadTransactions();
+      await loadTransactions({});
     } catch (error) {
       setError(
         error.response?.data?.errors || [
@@ -221,6 +293,7 @@ export const StockOutList = () => {
                 value={filters.company_id}
                 onChange={handleFilterChange}
               >
+                <MenuItem value="">All Companies</MenuItem>
                 {companies.map((company) => (
                   <MenuItem key={company.id} value={company.id}>
                     {company.name}
@@ -238,6 +311,7 @@ export const StockOutList = () => {
                 value={filters.hotel_id}
                 onChange={handleFilterChange}
               >
+                <MenuItem value="">All Hotels</MenuItem>
                 {hotels.map((hotel) => (
                   <MenuItem key={hotel.id} value={hotel.id}>
                     {hotel.name}
@@ -255,6 +329,7 @@ export const StockOutList = () => {
                 value={filters.category_id}
                 onChange={handleFilterChange}
               >
+                <MenuItem value="">All Categories</MenuItem>
                 {categories.map((category) => (
                   <MenuItem key={category.id} value={category.id}>
                     {category.name}
@@ -300,6 +375,21 @@ export const StockOutList = () => {
           </Grid>
         </Box>
       </Paper>
+      {printData && (
+        <Stack direction="row" spacing={2}>
+          <Button variant="contained" color="success" onClick={handlePrintBill}>
+            Print Bill
+          </Button>
+
+          {/* <Button
+            variant="contained"
+            color="success"
+            onClick={handleShareWhatsApp}
+          >
+            Share on WhatsApp
+          </Button> */}
+        </Stack>
+      )}
 
       <Paper sx={{ overflowX: "auto" }}>
         <Table>

@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "./context/AuthContext";
 
 export const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { getProfile, setToken } = useAuth();
 
   const [errors, setErrors] = useState({});
   const [serverResponse, setServerResponse] = useState({
-    type: "",
-    message: "",
+    type: location.state?.type || "",
+    message: location.state?.message || "",
   });
 
   // Initial values from form inputs
@@ -68,7 +70,6 @@ export const Login = () => {
 
       // Reset errors
       setErrors({});
-      console.log("All headers:", [...response.headers.entries()]);
       const authorization = await response.headers.get("Authorization");
       const token = authorization?.replace(/^Bearer\s+/i, "");
 

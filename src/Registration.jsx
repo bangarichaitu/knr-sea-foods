@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 export const Registration = () => {
+  const navigate = useNavigate();
   const [errors, setErrors] = useState({});
-  const [serverResponse, setserverResponse] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -42,14 +42,17 @@ export const Registration = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        if (response.status == 422 && data.errors) {
+        if (response.status === 422 && data.errors) {
           setErrors((prev) => ({
             ...prev,
             ...data.errors,
           }));
         }
+        return;
       }
-      setserverResponse(data.message);
+      navigate("/login", {
+        state: { message: data.message, type: "success" },
+      });
     } catch (error) {
       console.log("API error", error);
     }
@@ -217,11 +220,11 @@ export const Registration = () => {
         </p>
 
         {/* Server Response */}
-        {serverResponse && (
+        {/* {serverResponse && (
           <p className="text-green-800 bg-green-200 border-green-300">
             {serverResponse}
           </p>
-        )}
+        )} */}
       </div>
     </div>
   );
