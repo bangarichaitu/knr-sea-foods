@@ -15,7 +15,7 @@ export const CreateUser = () => {
     reset,
     formState: { errors },
   } = useForm();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const { showToast } = useToast();
@@ -29,6 +29,7 @@ export const CreateUser = () => {
         reset({
           name: res.user.name,
           email: res.user.email,
+          is_admin: res.user.is_admin,
         });
       });
     }
@@ -180,6 +181,20 @@ export const CreateUser = () => {
                 )}
               </div>
             </>
+          )}
+          {parseInt(id) !== parseInt(user.id) && (
+            <div>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  {...register("is_admin")}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Is Admin
+                </span>
+              </label>
+            </div>
           )}
 
           {/* Submit button */}

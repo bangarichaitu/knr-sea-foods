@@ -9,7 +9,7 @@ import { Pagination } from "./../../ui/Pagination";
 
 export const UsersList = () => {
   const [users, setUsers] = useState([]);
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const { showToast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
@@ -224,8 +224,8 @@ export const UsersList = () => {
 
           <tbody>
             {users &&
-              users.map((user) => (
-                <tr key={user.id}>
+              users.map((userData) => (
+                <tr key={userData.id}>
                   {/* Checkbox - Select User */}
                   {/* <td className="border border-gray-200 p-2 text-left">
                     <div className="flex items-center gap-1 group">
@@ -239,24 +239,24 @@ export const UsersList = () => {
                   </td> */}
 
                   <td className="border border-gray-200 p-2 text-left">
-                    {user.id}
+                    {userData.id}
                   </td>
                   <td className="border border-gray-200 p-2 text-left">
-                    {user.name}
+                    {userData.name}
                   </td>
                   <td className="border border-gray-200 p-2 text-left">
-                    {user.email}
+                    {userData.email}
                   </td>
                   <td className="border border-gray-200 p-2 text-left">
-                    {new Date(user.created_at).toLocaleDateString()}
+                    {new Date(userData.created_at).toLocaleDateString()}
                   </td>
 
                   {/* Status */}
                   <td className="border border-gray-200 p-2 text-left">
                     <span
-                      className={`px-2 py-1 rounded border ${user.status === 1 ? "bg-green-200 text-green-700 border-green-500" : "bg-gray-200 text-gray-600 border-gray-500"}`}
+                      className={`px-2 py-1 rounded border ${userData.status === 1 ? "bg-green-200 text-green-700 border-green-500" : "bg-gray-200 text-gray-600 border-gray-500"}`}
                     >
-                      {user.status ? "Active" : "In-active"}
+                      {userData.status ? "Active" : "In-active"}
                     </span>
                   </td>
 
@@ -264,32 +264,36 @@ export const UsersList = () => {
                   <td className="border border-gray-200 p-2 text-left">
                     <div className="flex gap-2">
                       <Link
-                        to={`/users/${user.id}`}
+                        to={`/users/${userData.id}`}
                         className="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded cursor-pointer"
                       >
                         View
                       </Link>
                       {/* Edit user */}
                       <Link
-                        to={`/users/${user.id}/edit`}
+                        to={`/users/${userData.id}/edit`}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded cursor-pointer"
                       >
                         Edit
                       </Link>
                       {/* Delete user */}
-                      <button
-                        onClick={() => deleteUser(user.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded cursor-pointer"
-                      >
-                        Delete
-                      </button>
+                      {userData.id !== user.id && user.is_admin && (
+                        <button
+                          onClick={() => deleteUser(userData.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      )}
                       {/* Status Action */}
-                      <button
-                        onClick={() => toggleUserStatus(user.id)}
-                        className={`${user.status ? "bg-yellow-600 hover:bg-yellow-700" : "bg-green-600 hover:bg-green-700"} text-white px-3 py-1 rounded cursor-pointer`}
-                      >
-                        {user.status ? "Deactivate" : "Activate"}
-                      </button>
+                      {userData.id !== user.id && user.is_admin && (
+                        <button
+                          onClick={() => toggleUserStatus(userData.id)}
+                          className={`${userData.status ? "bg-yellow-600 hover:bg-yellow-700" : "bg-green-600 hover:bg-green-700"} text-white px-3 py-1 rounded cursor-pointer`}
+                        >
+                          {userData.status ? "Deactivate" : "Activate"}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -54,15 +54,14 @@ export const StockOutList = () => {
     company_id: "",
     category_id: "",
     hotel_id: "",
-    transaction_date: "",
+    from_date: "",
+    to_date: "",
   };
 
   const [filters, setFilters] = useState(initialFilters);
 
   useEffect(() => {
     // loadDropdowns();
-    setFilters(initialFilters);
-    setPrintData(false);
     loadTransactions({});
   }, []);
 
@@ -85,65 +84,95 @@ export const StockOutList = () => {
   //   }
   // };
 
-  const handleShareWhatsApp = async () => {
-    const hotelName = hotels.find((h) => h.id === filters.hotel_id)?.name || "";
-    const bill = {
-      watsapp: true,
-      billNumber: filters.hotel_id ? `KNR-INV-${hotelName}-${Date.now()}` : "",
-      date: new Date().toLocaleDateString("en-IN"),
-      customerName: hotelName,
-      phone: hotels.find((h) => h.id === filters.hotel_id)?.phone || "",
-      items: transactions.map((t) => ({
-        name: t.category_name,
-        quantity: t.quantity,
-        price: t.rate,
-      })),
-      total: transactions.reduce((sum, t) => sum + t.quantity * t.rate, 0),
-    };
+  // const handleShareWhatsApp = async () => {
+  //   const hotelName = hotels.find((h) => h.id === filters.hotel_id)?.name || "";
+  //   const bill = {
+  //     watsapp: true,
+  //     billNumber: filters.hotel_id ? `KNR-${Date.now()}` : "",
+  //     date: new Date().toLocaleDateString("en-IN"),
+  //     customerName: hotelName,
+  //     phone: hotels.find((h) => h.id === filters.hotel_id)?.phone || "",
+  //     items: transactions.map((t) => ({
+  //       name: t.category_name,
+  //       quantity: t.quantity,
+  //       price: t.rate,
+  //     })),
+  //     total: transactions.reduce((sum, t) => sum + t.quantity * t.rate, 0),
+  //   };
 
-    const pdfBlob = printBill(bill);
+  //   const pdfBlob = printBill(bill);
 
-    const file = new File([pdfBlob], `${bill.billNumber}.pdf`, {
-      type: "application/pdf",
-    });
+  //   const file = new File([pdfBlob], `${bill.billNumber}.pdf`, {
+  //     type: "application/pdf",
+  //   });
 
-    console.log(
-      navigator.canShare?.({ files: [file] }),
-      "PDF Blob created for WhatsApp sharing",
-    );
-    console.log(pdfBlob, "pdfBlob");
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: "KNR SEA FOODS Bill",
-          text: "Your bill " + bill.billNumber,
-        });
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          console.error(error);
-        }
-      }
-    } else {
-      alert(
-        "Direct PDF sharing is not supported. Please download the bill and share it through WhatsApp.",
-      );
-    }
-  };
+  //   console.log(
+  //     navigator.canShare?.({ files: [file] }),
+  //     "PDF Blob created for WhatsApp sharing",
+  //   );
+  //   console.log(pdfBlob, "pdfBlob");
+  //   if (navigator.canShare?.({ files: [file] })) {
+  //     try {
+  //       await navigator.share({
+  //         files: [file],
+  //         title: "KNR SEA FOODS Bill",
+  //         text: "Your bill " + bill.billNumber,
+  //       });
+  //     } catch (error) {
+  //       if (error.name !== "AbortError") {
+  //         console.error(error);
+  //       }
+  //     }
+  //   } else {
+  //     alert(
+  //       "Direct PDF sharing is not supported. Please download the bill and share it through WhatsApp.",
+  //     );
+  //   }
+  // };
 
   const handlePrintBill = () => {
-    const hotelName = hotels.find((h) => h.id === filters.hotel_id)?.name || "";
+    const hotel = hotels.find((h) => h.id === filters.hotel_id);
+
+    const filteredTransactions = transactions.filter((t) => {
+      const transactionDate = t.transaction_date?.split("T")[0];
+
+      if (!transactionDate) return false;
+
+      if (filters.from_date && transactionDate < filters.from_date) {
+        return false;
+      }
+
+      if (filters.to_date && transactionDate > filters.to_date) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (!filteredTransactions.length) {
+      alert("No transactions found for the selected date range.");
+      return;
+    }
+
     const bill = {
-      billNumber: filters.hotel_id ? `KNR-INV-${hotelName}-${Date.now()}` : "",
-      date: new Date().toLocaleDateString("en-IN"),
-      customerName: hotelName,
-      phone: hotels.find((h) => h.id === filters.hotel_id)?.phone || "",
-      items: transactions.map((t) => ({
+      billNumber: `KNR-${Date.now()}`,
+      date: `${filters.from_date || ""} to ${filters.to_date || ""}`,
+      fromDate: filters.from_date || "",
+      toDate: filters.to_date || "",
+      customerName: hotel?.name || "",
+      phone: hotel?.phone || "",
+
+      items: filteredTransactions.map((t) => ({
+        transactionDate: t.transaction_date?.split("T")[0],
         name: t.category_name,
-        quantity: t.quantity,
-        price: t.rate,
+        quantity: Number(t.quantity || 0),
+        price: Number(t.rate || 0),
       })),
-      total: transactions.reduce((sum, t) => sum + t.quantity * t.rate, 0),
+
+      total: filteredTransactions.reduce(
+        (sum, t) => sum + Number(t.quantity || 0) * Number(t.rate || 0),
+        0,
+      ),
     };
 
     printBill(bill);
@@ -192,7 +221,7 @@ export const StockOutList = () => {
   };
 
   const handleApplyFilters = () => {
-    setPrintData(filters.hotel_id && filters.transaction_date);
+    setPrintData(filters.hotel_id && (filters.from_date || filters.to_date));
     loadTransactions(filters);
   };
 
@@ -284,7 +313,7 @@ export const StockOutList = () => {
 
         <Box component="form">
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 2.5 }}>
+            <Grid size={{ xs: 12, md: 2 }}>
               <TextField
                 select
                 fullWidth
@@ -302,7 +331,7 @@ export const StockOutList = () => {
               </TextField>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 2.5 }}>
+            <Grid size={{ xs: 12, md: 2 }}>
               <TextField
                 select
                 fullWidth
@@ -320,7 +349,7 @@ export const StockOutList = () => {
               </TextField>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 2.5 }}>
+            <Grid size={{ xs: 12, md: 2 }}>
               <TextField
                 select
                 fullWidth
@@ -338,18 +367,34 @@ export const StockOutList = () => {
               </TextField>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 2.5 }}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Transaction Date"
-                name="transaction_date"
-                value={filters.transaction_date}
-                onChange={handleFilterChange}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                }}
-              />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="From Date"
+                  name="from_date"
+                  value={filters.from_date}
+                  onChange={handleFilterChange}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="To Date"
+                  name="to_date"
+                  value={filters.to_date}
+                  onChange={handleFilterChange}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                />
+              </Grid>
             </Grid>
 
             <Grid
@@ -375,7 +420,7 @@ export const StockOutList = () => {
           </Grid>
         </Box>
       </Paper>
-      {printData && (
+      {printData && transactions.length > 0 && (
         <Stack direction="row" spacing={2}>
           <Button variant="contained" color="success" onClick={handlePrintBill}>
             Print Bill
